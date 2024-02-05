@@ -1,13 +1,15 @@
 import { BadRequestException, Injectable } from "@nestjs/common";
 import { CreateClientDto } from "./dto/create-client.dto";
+import { CreateTransactionDto } from "./dto/create-transaction.dto";
 import { QueryClientsDto } from "./dto/query-client.dto";
 import { UpdateClientDto } from "./dto/update-client.dto";
+import { UpdateTransactionDto } from "./dto/update-transaction.dto";
 import { clientsRepository } from "./repositories/client.repository";
 
 @Injectable()
 export class ClientsService {
     constructor(
-        private clientsRepository: clientsRepository
+        private clientsRepository: clientsRepository,
     ) { }
 
     async create(data: CreateClientDto) {
@@ -21,7 +23,8 @@ export class ClientsService {
 
         const client = await this.clientsRepository.create({
             nome: data.nome,
-            limite: data.limite
+            limite: data.limite,
+            saldo: data.limite
         })
 
         return client
@@ -61,5 +64,68 @@ export class ClientsService {
         }
 
         await this.clientsRepository.delete(id)
+    }
+
+    async createTransaction(id: string, data: CreateTransactionDto) {
+        // Obter informações do cliente
+        let { limite, saldo } = await this.clientsRepository.findUnique(id);
+
+        console.log(saldo)
+
+        // Verificar condições da transação
+        if (data.tipo === "d" && (saldo <= 0 || saldo < data.valor)) {
+            throw new BadRequestException('Saldo insuficiente para transação.');
+        } else if (data.tipo === "c" && Math.abs(saldo) <= limite) {
+            saldo -= data.valor;
+        } else if (data.tipo === "c" && (data.valor + Math.abs(saldo) > limite)) {
+            throw new BadRequestException('Limite excedido.');
+        } else {
+            saldo -= data.valor;
+        }
+
+        console.log(saldo)
+
+        // Criar a transação
+        const transaction = await this.clientsRepository.createTransaction(id, data);
+
+        // Atualizar o saldo no banco de dados
+        return {
+            limite,
+            saldo,
+        };
+    }
+
+    async findAllClientTransactions(id: string) {
+        const clientTransactions = await this.clientsRepository.findAllClientTransactions(id)
+
+        return clientTransactions
+    }
+
+    async findUniqueTransaction(id: string) {
+        const transaction = await this.clientsRepository.findUniqueTransaction(id)
+
+        if (!transaction) {
+            throw new BadRequestException('Transação não encontrada.')
+        }
+    }
+
+    async updateTransaction(id: string, dataTransaction: UpdateTransactionDto) {
+        const transaction = await this.clientsRepository.findUniqueTransaction(id)
+
+        if (!transaction) {
+            throw new BadRequestException('Transação não encontrada.')
+        }
+
+        const updatedTransaction = await this.clientsRepository.updateTransaction(id, dataTransaction)
+    }
+
+    async deleteTransaction(id: string) {
+        const transaction = await this.clientsRepository.findUniqueTransaction(id)
+
+        if (!transaction) {
+            throw new BadRequestException('Transação não encontrada.')
+        }
+
+        const deletedTransaction = await this.clientsRepository.deleteTransaction(id)
     }
 }

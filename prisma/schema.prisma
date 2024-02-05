@@ -19,6 +19,7 @@ model client {
   id          String        @id @default(uuid())
   nome        String
   limite      Int
+  saldo       Int?          @default(0)
   transaction transaction[]
 }
 
@@ -26,7 +27,7 @@ model transaction {
   id        String @id @default(uuid())
   valor     Int
   tipo      Tipo
-  descricao String 
+  descricao String
 
   client    client @relation(fields: [client_id], references: [id])
   client_id String

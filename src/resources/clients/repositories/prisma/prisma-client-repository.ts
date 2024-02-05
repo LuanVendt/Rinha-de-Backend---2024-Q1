@@ -1,8 +1,10 @@
-import { Injectable } from "@nestjs/common";
+import { BadRequestException, Injectable } from "@nestjs/common";
 import { PrismaService } from "src/database/prisma-service";
 import { QueryClientsDto } from "../../dto/query-client.dto";
 import { UpdateClientDto } from "../../dto/update-client.dto";
+import { UpdateTransactionDto } from "../../dto/update-transaction.dto";
 import { ClientEntity } from "../../entities/client.entity";
+import { TransactionEntity } from "../../entities/transaction.entity";
 import { clientsRepository } from "../client.repository";
 
 @Injectable()
@@ -14,6 +16,7 @@ export class PrismaClientsRepository implements clientsRepository {
             data: {
                 nome: data.nome,
                 limite: data.limite,
+                saldo: data.limite
             }
         })
 
@@ -98,6 +101,91 @@ export class PrismaClientsRepository implements clientsRepository {
         })
 
         const client = await this.prisma.client.delete({
+            where: {
+                id,
+            }
+        })
+    }
+
+    async createTransaction(id: string, data: TransactionEntity) {
+        let { limite, saldo } = await this.prisma.client.findUnique({
+            where: {
+                id,
+            }
+        })
+
+        if (saldo > 0 && data.tipo == "d" && saldo > data.valor) {
+            saldo -= data.valor
+        } else if (saldo < 0 && data.tipo == "d") {
+            throw new BadRequestException('Transação acima do saldo.')
+        } else if (data.tipo == "c" && Math.abs(saldo) < limite) {
+            saldo -= data.valor
+        } else if (data.tipo == "c" && saldo < 0 && (Math.abs(saldo) + data.valor) > limite) {
+            throw new BadRequestException('Limite Excedido.')
+        }
+
+        const transaction = await this.prisma.transaction.create({
+            data: {
+                valor: data.valor,
+                tipo: data.tipo,
+                descricao: data.descricao,
+                client_id: id,
+            }
+        })
+
+        await this.prisma.client.update({
+            where: {
+                id,
+            },
+            data: {
+                saldo: saldo
+            }
+        })
+
+        return {
+            limite,
+            saldo
+        }
+    }
+
+    async findAllClientTransactions(id: string) {
+        const clientTransactions = await this.prisma.transaction.findMany({
+            where: {
+                client_id: id,
+            }
+        })
+
+        return clientTransactions
+    }
+
+    async findUniqueTransaction(id: string) {
+        const transaction = await this.prisma.transaction.findUnique({
+            where: {
+                id,
+            }
+        })
+
+        return transaction
+    }
+
+    async updateTransaction(id: string, dataTransaction: UpdateTransactionDto) {
+        const transaction = await this.prisma.transaction.update({
+            where: {
+                id,
+            },
+            data: {
+                valor: dataTransaction.valor,
+                tipo: dataTransaction.tipo,
+                descricao: dataTransaction.descricao,
+                client_id: dataTransaction.client_id,
+            }
+        })
+
+        return transaction
+    }
+
+    async deleteTransaction(id: string) {
+        const transaction = await this.prisma.transaction.delete({
             where: {
                 id,
             }

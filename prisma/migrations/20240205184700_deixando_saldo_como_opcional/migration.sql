@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "client" ALTER COLUMN "saldo" DROP NOT NULL,
+ALTER COLUMN "saldo" SET DEFAULT 0;
