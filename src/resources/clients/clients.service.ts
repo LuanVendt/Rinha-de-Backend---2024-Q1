@@ -98,7 +98,24 @@ export class ClientsService {
     async findAllClientTransactions(id: string) {
         const clientTransactions = await this.clientsRepository.findAllClientTransactions(id)
 
-        return clientTransactions
+        const { saldo, limite } = await this.clientsRepository.findUnique(id)
+
+        const data_extrato = new Date()
+
+        const transactionsWithoutClientId = clientTransactions.map(transaction => {
+            const { client_id, ...transactionsWithoutClientId } = transaction
+            return transactionsWithoutClientId
+        })
+
+
+        return {
+            saldo: {
+                total: saldo,
+                data_extrato,
+                limite
+            },
+            ultimas_transacoes: transactionsWithoutClientId
+        }
     }
 
     async findUniqueTransaction(id: string) {

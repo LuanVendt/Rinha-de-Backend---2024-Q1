@@ -152,10 +152,20 @@ export class PrismaClientsRepository implements clientsRepository {
         const clientTransactions = await this.prisma.transaction.findMany({
             where: {
                 client_id: id,
-            }
+            },
         })
 
-        return clientTransactions
+        const transactionsWithRenamedDateField = clientTransactions.map(transaction => {
+            // Remover o campo 'id' de cada transação
+            const { id, ...transactionWithoutId } = transaction;
+            return {
+                ...transactionWithoutId,
+                realizada_em: transaction.date, // Renomeando o campo date para realizada_em
+                date: undefined // Removendo o campo date original
+            };
+        });
+
+        return transactionsWithRenamedDateField
     }
 
     async findUniqueTransaction(id: string) {
