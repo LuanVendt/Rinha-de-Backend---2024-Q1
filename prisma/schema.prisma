@@ -15,21 +15,29 @@ enum Tipo {
   d
 }
 
-model client {
-  id          String        @id @default(uuid())
+model clientes {
+  id          Int          @id @default(autoincrement())
   nome        String
   limite      Int
-  saldo       Int?          @default(0)
-  transaction transaction[]
+  transaction transacoes[]
+  saldos      saldos?
 }
 
-model transaction {
-  id        String   @id @default(uuid())
-  valor     Int
-  tipo      Tipo
-  descricao String
-  date      DateTime @default(now())
+model transacoes {
+  id           String   @id @default(uuid())
+  valor        Int
+  tipo         Tipo
+  descricao    String
+  realizada_em DateTime @default(now())
 
-  client    client @relation(fields: [client_id], references: [id])
-  client_id String
+  client    clientes @relation(fields: [client_id], references: [id])
+  client_id Int
+}
+
+model saldos {
+  id    Int @id @default(autoincrement())
+  valor Int
+
+  client     clientes @relation(fields: [cliente_id], references: [id])
+  cliente_id Int      @unique
 }

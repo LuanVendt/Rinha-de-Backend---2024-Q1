@@ -1,6 +1,5 @@
 export interface ClientEntity {
-    id?: string;
+    id?: number;
     nome: string;
     limite: number;
-    saldo?: number;
 }

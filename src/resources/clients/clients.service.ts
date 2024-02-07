@@ -21,11 +21,7 @@ export class ClientsService {
             throw new Error('Nome é obrigatório.')
         }
 
-        const client = await this.clientsRepository.create({
-            nome: data.nome,
-            limite: data.limite,
-            saldo: data.limite
-        })
+        const client = await this.clientsRepository.create(data)
 
         return client
     }
@@ -67,28 +63,10 @@ export class ClientsService {
     }
 
     async createTransaction(id: string, data: CreateTransactionDto) {
-        // Obter informações do cliente
-        let { limite, saldo } = await this.clientsRepository.findUnique(id);
+        // Realiza a transação e obtém o resultado, incluindo o limite e o saldo atualizado
+        const { limite, saldo } = await this.clientsRepository.createTransaction(id, data);
 
-        console.log(saldo)
-
-        // Verificar condições da transação
-        if (data.tipo === "d" && (saldo <= 0 || saldo < data.valor)) {
-            throw new BadRequestException('Saldo insuficiente para transação.');
-        } else if (data.tipo === "c" && Math.abs(saldo) <= limite) {
-            saldo -= data.valor;
-        } else if (data.tipo === "c" && (data.valor + Math.abs(saldo) > limite)) {
-            throw new BadRequestException('Limite excedido.');
-        } else {
-            saldo -= data.valor;
-        }
-
-        console.log(saldo)
-
-        // Criar a transação
-        const transaction = await this.clientsRepository.createTransaction(id, data);
-
-        // Atualizar o saldo no banco de dados
+        // Retorna o limite e o saldo atualizado
         return {
             limite,
             saldo,
@@ -96,9 +74,17 @@ export class ClientsService {
     }
 
     async findAllClientTransactions(id: string) {
+        const client = await this.clientsRepository.findUnique(id)
+
+        if (!client) {
+            throw new BadRequestException('Cliente não encontrado.')
+        }
+
         const clientTransactions = await this.clientsRepository.findAllClientTransactions(id)
 
-        const { saldo, limite } = await this.clientsRepository.findUnique(id)
+        const { limite } = await this.clientsRepository.findUnique(id)
+
+        const saldo = await this.clientsRepository.findSaldo(id)
 
         const data_extrato = new Date()
 
@@ -110,9 +96,9 @@ export class ClientsService {
 
         return {
             saldo: {
-                total: saldo,
+                total: saldo.valor,
                 data_extrato,
-                limite
+                limite: client.limite
             },
             ultimas_transacoes: transactionsWithoutClientId
         }
