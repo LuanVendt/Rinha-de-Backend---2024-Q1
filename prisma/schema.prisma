@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,17 +7,12 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Tipo {
-  c
-  d
-}
-
 model clientes {
   id          Int          @id @default(autoincrement())
   nome        String
   limite      Int
-  transaction transacoes[]
   saldos      saldos?
+  transaction transacoes[]
 }
 
 model transacoes {
@@ -29,15 +21,18 @@ model transacoes {
   tipo         Tipo
   descricao    String
   realizada_em DateTime @default(now())
-
-  client    clientes @relation(fields: [client_id], references: [id])
-  client_id Int
+  client_id    Int
+  client       clientes @relation(fields: [client_id], references: [id])
 }
 
 model saldos {
-  id    Int @id @default(autoincrement())
-  valor Int
-
-  client     clientes @relation(fields: [cliente_id], references: [id])
+  id         Int      @id @default(autoincrement())
+  valor      Int
   cliente_id Int      @unique
+  client     clientes @relation(fields: [cliente_id], references: [id])
+}
+
+enum Tipo {
+  c
+  d
 }
