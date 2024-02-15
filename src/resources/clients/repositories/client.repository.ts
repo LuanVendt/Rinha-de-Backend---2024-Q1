@@ -6,14 +6,14 @@ import { TransactionEntity } from "../entities/transaction.entity";
 
 export abstract class clientsRepository {
     abstract create(data: ClientEntity): Promise<ClientEntity>
-    abstract createTransaction(id: string, data: TransactionEntity): Promise<any>
+    abstract createTransaction(id: number, data: TransactionEntity): Promise<any>
     abstract findAll(query: QueryClientsDto): Promise<any>
-    abstract findAllClientTransactions(id: string): Promise<any>
-    abstract findSaldo(clientId: string): Promise<any>
-    abstract findUnique(id: string): Promise<ClientEntity>
-    abstract findUniqueTransaction(id: string): Promise<any>
-    abstract update(id: string, dataClient: UpdateClientDto): Promise<UpdateClientDto>
-    abstract updateTransaction(id: string, dataTransaction: UpdateTransactionDto): Promise<any>
-    abstract delete(id: string): Promise<void>
-    abstract deleteTransaction(id: string): Promise<void>
+    abstract findAllClientTransactions(id: number): Promise<any>
+    abstract findSaldo(clientId: number): Promise<any>
+    abstract findUnique(id: number): Promise<ClientEntity>
+    abstract findUniqueTransaction(id: number): Promise<any>
+    abstract update(id: number, dataClient: UpdateClientDto): Promise<UpdateClientDto>
+    abstract updateTransaction(id: number, dataTransaction: UpdateTransactionDto): Promise<any>
+    abstract delete(id: number): Promise<void>
+    abstract deleteTransaction(id: number): Promise<void>
 }

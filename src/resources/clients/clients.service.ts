@@ -33,7 +33,7 @@ export class ClientsService {
     }
 
     async findUnique(id: string) {
-        const client = await this.clientsRepository.findUnique(id)
+        const client = await this.clientsRepository.findUnique(parseInt(id))
 
         if (!client) {
             throw new BadRequestException('Cliente não encontrado.')
@@ -43,30 +43,28 @@ export class ClientsService {
     }
 
     async update(id: string, data: UpdateClientDto) {
-        const client = await this.clientsRepository.findUnique(id)
+        const client = await this.clientsRepository.findUnique(parseInt(id))
 
         if (!client) {
             throw new BadRequestException('Cliente não encontrado.')
         }
 
-        const updatedClient = await this.clientsRepository.update(id, data)
+        const updatedClient = await this.clientsRepository.update(parseInt(id), data)
     }
 
     async delete(id: string) {
-        const client = await this.clientsRepository.findUnique(id)
+        const client = await this.clientsRepository.findUnique(parseInt(id))
 
         if (!client) {
             throw new BadRequestException('Cliente não encontrado.')
         }
 
-        await this.clientsRepository.delete(id)
+        await this.clientsRepository.delete(parseInt(id))
     }
 
     async createTransaction(id: string, data: CreateTransactionDto) {
-        // Realiza a transação e obtém o resultado, incluindo o limite e o saldo atualizado
-        const { limite, saldo } = await this.clientsRepository.createTransaction(id, data);
+        const { limite, saldo } = await this.clientsRepository.createTransaction(parseInt(id), data);
 
-        // Retorna o limite e o saldo atualizado
         return {
             limite,
             saldo,
@@ -74,22 +72,22 @@ export class ClientsService {
     }
 
     async findAllClientTransactions(id: string) {
-        const client = await this.clientsRepository.findUnique(id)
+        const client = await this.clientsRepository.findUnique(parseInt(id))
 
         if (!client) {
             throw new BadRequestException('Cliente não encontrado.')
         }
 
-        const clientTransactions = await this.clientsRepository.findAllClientTransactions(id)
+        const clientTransactions = await this.clientsRepository.findAllClientTransactions(parseInt(id))
 
-        const { limite } = await this.clientsRepository.findUnique(id)
+        const { limite } = await this.clientsRepository.findUnique(parseInt(id))
 
-        const saldo = await this.clientsRepository.findSaldo(id)
+        const saldo = await this.clientsRepository.findSaldo(parseInt(id))
 
         const data_extrato = new Date()
 
         const transactionsWithoutClientId = clientTransactions.map(transaction => {
-            const { client_id, ...transactionsWithoutClientId } = transaction
+            const { cliente_id, ...transactionsWithoutClientId } = transaction
             return transactionsWithoutClientId
         })
 
@@ -105,7 +103,7 @@ export class ClientsService {
     }
 
     async findUniqueTransaction(id: string) {
-        const transaction = await this.clientsRepository.findUniqueTransaction(id)
+        const transaction = await this.clientsRepository.findUniqueTransaction(parseInt(id))
 
         if (!transaction) {
             throw new BadRequestException('Transação não encontrada.')
@@ -113,22 +111,22 @@ export class ClientsService {
     }
 
     async updateTransaction(id: string, dataTransaction: UpdateTransactionDto) {
-        const transaction = await this.clientsRepository.findUniqueTransaction(id)
+        const transaction = await this.clientsRepository.findUniqueTransaction(parseInt(id))
 
         if (!transaction) {
             throw new BadRequestException('Transação não encontrada.')
         }
 
-        const updatedTransaction = await this.clientsRepository.updateTransaction(id, dataTransaction)
+        const updatedTransaction = await this.clientsRepository.updateTransaction(parseInt(id), dataTransaction)
     }
 
     async deleteTransaction(id: string) {
-        const transaction = await this.clientsRepository.findUniqueTransaction(id)
+        const transaction = await this.clientsRepository.findUniqueTransaction(parseInt(id))
 
         if (!transaction) {
             throw new BadRequestException('Transação não encontrada.')
         }
 
-        const deletedTransaction = await this.clientsRepository.deleteTransaction(id)
+        const deletedTransaction = await this.clientsRepository.deleteTransaction(parseInt(id))
     }
 }

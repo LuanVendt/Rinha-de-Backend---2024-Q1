@@ -1,10 +1,12 @@
-CREATE TABLE clientes (
+
+
+CREATE TABLE IF NOT EXISTS clientes (
 	id SERIAL PRIMARY KEY,
 	nome VARCHAR(50) NOT NULL,
 	limite INTEGER NOT NULL
 );
 
-CREATE TABLE transacoes (
+CREATE TABLE IF NOT EXISTS transacoes (
 	id SERIAL PRIMARY KEY,
 	cliente_id INTEGER NOT NULL,
 	valor INTEGER NOT NULL,
@@ -15,13 +17,17 @@ CREATE TABLE transacoes (
 		FOREIGN KEY (cliente_id) REFERENCES clientes(id)
 );
 
-CREATE TABLE saldos (
+CREATE TABLE IF NOT EXISTS saldos (
 	id SERIAL PRIMARY KEY,
 	cliente_id INTEGER NOT NULL,
 	valor INTEGER NOT NULL,
 	CONSTRAINT fk_clientes_saldos_id
 		FOREIGN KEY (cliente_id) REFERENCES clientes(id)
 );
+
+DELETE FROM transacoes;
+DELETE FROM saldos;
+DELETE FROM clientes;
 
 DO $$
 BEGIN

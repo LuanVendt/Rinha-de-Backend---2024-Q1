@@ -3,6 +3,6 @@ export interface TransactionEntity {
     valor: number;
     tipo: 'c' | 'd';
     descricao: string;
-    client_id: string;
+    cliente_id: string;
     realizada_em: Date;
 }
