@@ -1,248 +1,115 @@
-import { BadRequestException, Injectable } from "@nestjs/common";
+import { HttpException, Injectable } from "@nestjs/common";
 import { PrismaService } from "src/database/prisma-service";
-import { QueryClientsDto } from "../../dto/query-client.dto";
-import { UpdateClientDto } from "../../dto/update-client.dto";
-import { UpdateTransactionDto } from "../../dto/update-transaction.dto";
-import { ClientEntity } from "../../entities/client.entity";
 import { TransactionEntity } from "../../entities/transaction.entity";
 import { clientsRepository } from "../client.repository";
+
+
+const clients = [{
+    id: 1,
+    saldo_id: 1,
+    nome: 'o barato sai caro',
+    limite: 100000
+},
+{
+    id: 2,
+    saldo_id: 2,
+    nome: 'zan corp ltda',
+    limite: 80000
+},
+{
+    id: 3,
+    saldo_id: 3,
+    nome: 'les cruders',
+    limite: 1000000
+},
+{
+    id: 4,
+    saldo_id: 4,
+    nome: 'padaria joia de cocaia',
+    limite: 10000000
+},
+{
+    id: 5,
+    saldo_id: 5,
+    nome: 'kid mais',
+    limite: 500000
+}];
 
 @Injectable()
 export class PrismaClientsRepository implements clientsRepository {
     constructor(private prisma: PrismaService) { }
 
-    async create(data: ClientEntity) {
-        const client = await this.prisma.clientes.create({
-            data: {
-                nome: data.nome,
-                limite: data.limite,
-            }
-        })
-
-        await this.prisma.saldos.create({
-            data: {
-                cliente_id: client.id,
-                valor: 0,
-            }
-        })
-
-        return client
-    }
-
-    async findAll(query: QueryClientsDto) {
-        let { page = 1, limit = 10, search = '' } = query;
-
-        page = Number(page)
-        limit = Number(limit)
-        search = String(search);
-
-        const skip = (page - 1) * limit;
-
-        const total = await this.prisma.clientes.count({
-            where: {
-                OR: [
-                    {
-                        nome: {
-                            contains: search,
-                        },
-                    },
-                ]
-            }
-        })
-
-        const users = await this.prisma.clientes.findMany({
-            where: {
-                OR: [
-                    {
-                        nome: {
-                            contains: search,
-                        },
-                    },
-                ],
-            },
-            skip,
-            take: limit,
-        })
-
-        return {
-            total,
-            page,
-            search,
-            limit,
-            pages: Math.ceil(total / limit),
-            data: users
-        }
-
-    }
-
     async findUnique(id: number) {
-        const client = await this.prisma.clientes.findUnique({
-            where: {
-                id: id,
-            }
-        })
-
-        return client
+        return id > 0 && id < 6 ? clients[id - 1] : null;
     }
 
-    async update(id: number, dataClient: UpdateClientDto) {
-        const client = await this.prisma.clientes.update({
-            where: {
-                id: id,
-            },
-            data: {
-                nome: dataClient.nome,
-                limite: dataClient.limite,
-            }
-        })
+    async atualizaSaldo2(idSaldo: number, limite: number, valor: number, tipo: 'c' | 'd') {
+        const query = `
+                UPDATE saldos
+                SET valor = valor + ${tipo === 'd' ? -Math.abs(valor) : Math.abs(valor)}
+                WHERE id = ${idSaldo}
+                AND (ABS(valor - ${Math.abs(valor)}) < ${limite} OR '${tipo}' = 'c')
+                RETURNING *;
+            `;
 
-        return client
+        return await this.prisma.$queryRawUnsafe(query);
     }
 
-    async delete(id: number) {
-        await this.prisma.transacoes.deleteMany({
-            where: {
-                cliente_id: id,
-            }
-        })
-
-        await this.prisma.saldos.deleteMany({
-            where: {
-                cliente_id: id
-            }
-        })
-
-        await this.prisma.clientes.delete({
-            where: {
-                id: id,
-            }
-        })
-    }
 
     async createTransaction(id: number, data: TransactionEntity) {
-        const client = await this.prisma.clientes.findUnique({
-            where: {
-                id: id,
-            }
-        });
+        const client = clients[id - 1];
 
-        if (data.tipo === "d") {
-            const { valor: saldoAtual } = await this.prisma.saldos.findUnique({
-                where: {
-                    id: id
-                },
-            });
 
-            const novoSaldo = saldoAtual - data.valor;
+        const valSaldo = await this.atualizaSaldo2(client.saldo_id, client.limite, data.valor, data.tipo)
 
-            if (novoSaldo < 0 && Math.abs(novoSaldo) > client.limite) {
-                throw new BadRequestException('Limite excedido.');
-            }
+        if ((!valSaldo || !Array.isArray(valSaldo)) || (Array.isArray(valSaldo) && valSaldo.length === 0)) {
+            throw new HttpException('Limite Excedido', 422)
         }
 
-        const transaction = await this.prisma.transacoes.create({
+        await this.prisma.transacoes.create({
             data: {
                 valor: data.valor,
                 tipo: data.tipo,
-                descricao: data.descricao,
+                descricao: data.descricao.substring(0, 9),
                 cliente_id: id,
-            }
-        });
-
-        const saldo = await this.prisma.saldos.findFirst({
-            where: {
-                cliente_id: client.id
-            }
+            },
         })
-
-        await this.prisma.saldos.update({
-            where: {
-                id: saldo.id,
-            },
-            data: {
-                valor: {
-                    increment: data.tipo === "c" ? data.valor : -data.valor
-                }
-            }
-        });
-
-        const { valor: saldoAtualizado } = await this.prisma.saldos.findUnique({
-            where: {
-                id: id
-            },
-        });
 
         return {
             limite: client.limite,
-            saldo: saldoAtualizado,
+            saldo: valSaldo[0].valor,
         };
     }
 
-
     async findAllClientTransactions(id: number) {
-        const clientTransactions = await this.prisma.transacoes.findMany({
-            where: {
-                cliente_id: id,
-            },
-            orderBy: {
-                realizada_em: 'desc'
-            },
-            take: 10
-        })
+        return this.prisma.$transaction(async (prisma) => {
+            const clientTransactions = await prisma.transacoes.findMany({
+                where: {
+                    cliente_id: id,
+                },
+                orderBy: {
+                    realizada_em: 'desc'
+                },
+                take: 10,
+                select: {
+                    valor: true,
+                    tipo: true,
+                    descricao: true,
+                    realizada_em: true
+                }
+            });
 
-        const transactionsWithRenamedDateField = clientTransactions.map(transaction => {
-            const { id, ...transactionWithoutId } = transaction;
-            return {
-                ...transactionWithoutId,
-                realizada_em: transaction.realizada_em,
-                date: undefined
-            };
+            return clientTransactions;
         });
-
-        return transactionsWithRenamedDateField
     }
-
-    async findUniqueTransaction(id: number) {
-        const transaction = await this.prisma.transacoes.findUnique({
+    async findSaldo(id: number) {
+        const saldo = await this.prisma.saldos.findUnique({
             where: {
-                id: id,
-            }
-        })
-
-        return transaction
-    }
-
-    async findSaldo(clientId: number) {
-        const saldo = await this.prisma.saldos.findFirst({
-            where: {
-                cliente_id: clientId
+                id,
             }
         })
 
         return saldo
     }
-
-    async updateTransaction(id: number, dataTransaction: UpdateTransactionDto) {
-        const transaction = await this.prisma.transacoes.update({
-            where: {
-                id,
-            },
-            data: {
-                valor: dataTransaction.valor,
-                tipo: dataTransaction.tipo,
-                descricao: dataTransaction.descricao,
-                cliente_id: parseInt(dataTransaction.cliente_id),
-            }
-        })
-
-        return transaction
-    }
-
-    async deleteTransaction(id: number) {
-        const transaction = await this.prisma.transacoes.delete({
-            where: {
-                id,
-            }
-        })
-    }
 }
+

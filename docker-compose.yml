@@ -20,8 +20,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.45"
-          memory: "200MB"
+          cpus: "1"
+          memory: "100MB"
 
   api02:
     <<: *api
@@ -47,8 +47,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.15"
-          memory: "10MB"
+          cpus: "1"
+          memory: "100MB"
 
   db:
     image: postgres:latest
@@ -58,7 +58,7 @@ services:
       - POSTGRES_USER=admin
       - POSTGRES_DB=rinha
     ports:
-      - "1432:5432"
+      - "5432:5432"
     volumes:
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     command: postgres -c checkpoint_timeout=600 -c max_wal_size=4096
@@ -69,8 +69,8 @@ services:
           # aqui declarados é de 1.5 unidades de CPU e 550MB
           # de memória. A distribuição feita aqui é apenas
           # um exemplo – distribua como quiser.
-          cpus: "0.45"
-          memory: "140MB"
+          cpus: "1"
+          memory: "370MB"
 
 # O uso do modo `bridge` deve ser adequado à carga que será usada no teste.
 # A edição anterior se beneficiou do modo host pois o volume de requisições

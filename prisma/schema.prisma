@@ -20,7 +20,7 @@ model transacoes {
   cliente_id   Int
   valor        Int
   tipo         String   @db.Char(1)
-  descricao    String   @db.VarChar(10)
+  descricao    String   @default("transacao") @db.VarChar(10)
   realizada_em DateTime @default(now()) @db.Timestamp(6)
   clientes     clientes @relation(fields: [cliente_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_clientes_transacoes_id")
 }

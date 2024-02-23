@@ -17,6 +17,8 @@ CREATE TABLE IF NOT EXISTS transacoes (
 		FOREIGN KEY (cliente_id) REFERENCES clientes(id)
 );
 
+CREATE INDEX idx_transacoes_cliente_id_realizada_em ON transacoes (cliente_id, realizada_em DESC);
+
 CREATE TABLE IF NOT EXISTS saldos (
 	id SERIAL PRIMARY KEY,
 	cliente_id INTEGER NOT NULL,
