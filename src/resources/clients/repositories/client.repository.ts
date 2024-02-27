@@ -7,4 +7,5 @@ export abstract class clientsRepository {
     abstract findAllClientTransactions(id: number): Promise<any>
     abstract findSaldo(clientId: number): Promise<any>
     abstract findUnique(id: number): Promise<ClientEntity>
+    abstract findExtract(id: number): Promise<any>
 }

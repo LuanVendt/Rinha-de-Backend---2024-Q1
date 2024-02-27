@@ -111,5 +111,19 @@ export class PrismaClientsRepository implements clientsRepository {
 
         return saldo
     }
+
+    async findExtract(id: number): Promise<any> {
+        const query = `
+        select saldos.valor as saldo, tipo, descricao, transacoes.valor as valor, realizada_em from saldos
+            left join transacoes on 
+                saldos.cliente_id = transacoes.cliente_id
+        where 
+            saldos.id = ${id}
+        order by realizada_em desc
+        limit 10
+        `
+
+        return await this.prisma.$queryRawUnsafe(query);
+    }
 }
 

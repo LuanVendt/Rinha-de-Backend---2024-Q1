@@ -31,19 +31,27 @@ export class ClientsService {
             throw new HttpException('Cliente não encontrado.', 404)
         }
 
-        const clientTransactions = await this.clientsRepository.findAllClientTransactions(parseInt(id))
+        const extrato = await this.clientsRepository.findExtract(parseInt(id))
 
-        const saldo = await this.clientsRepository.findSaldo(client.saldo_id)
-
-        const data_extrato = new Date()
+        const transacoes = extrato.map(item => {
+            if (!item.valor) {
+                return
+            }
+            return {
+                tipo: item.tipo,
+                valor: item.valor,
+                descricao: item.descricao,
+                realizada_em: item.realizada_em,
+            }
+        })
 
         return {
             saldo: {
-                total: saldo.valor,
-                data_extrato,
+                total: extrato[0].saldo,
+                data_extrato: new Date(),
                 limite: client.limite || 0
             },
-            ultimas_transacoes: clientTransactions
+            ultimas_transacoes: transacoes[0]?.valor ? transacoes : []
         }
     }
 }
